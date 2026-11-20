@@ -1,0 +1,849 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Compilador de Lenguaje Toy</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Compilador de Lenguaje Toy
+            </h3>
+
+            <p class="text-muted mb-0">
+                Análisis léxico y sintáctico
+            </p>
+        </div>
+
+        <a th:href="@{/}" class="btn btn-outline-secondary">
+            ← Volver a proyectos
+        </a>
+
+    </div>
+
+
+    <!-- EDITOR Y RESULTADOS -->
+    <div class="row g-3 align-items-stretch">
+
+        <!-- EDITOR DE CÓDIGO -->
+        <div class="col-12 col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-dark text-white">
+                    <strong>⌨ Editor de código</strong>
+                </div>
+
+                <div class="card-body">
+
+                    <textarea
+                        id="codigo"
+                        class="form-control font-monospace"
+                        rows="12"
+                        spellcheck="false"
+                        placeholder="Escribe aquí tu código Toy..."></textarea>
+
+                    <!-- BOTONES -->
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+
+                        <button class="btn btn-outline-success btn-sm"
+                                onclick="cargarEjemploCorrecto()">
+                            ✓ Correcto
+                        </button>
+
+                        <button class="btn btn-outline-warning btn-sm"
+                                onclick="cargarEjemploSintactico()">
+                            ⚠ Error sintáctico
+                        </button>
+
+                        <button class="btn btn-outline-danger btn-sm"
+                                onclick="cargarEjemploLexico()">
+                            ✕ Error léxico
+                        </button>
+
+                        <button class="btn btn-primary btn-sm"
+                                id="btnAnalizar"
+                                onclick="analizarCodigo()">
+                            ▶ Analizar código
+                        </button>
+
+                        <button class="btn btn-outline-secondary btn-sm"
+                                onclick="limpiarEditor()">
+                            Limpiar
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RESULTADOS DEL ANÁLISIS -->
+        <div class="col-12 col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-dark text-white">
+                    <strong>Resultado del análisis</strong>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- RESULTADO GENERAL -->
+                    <div id="resultadoGeneral" class="mb-3">
+
+                        <div class="text-center text-muted py-3">
+                            <p class="mb-0">
+                                Escribe código y presiona Analizar código.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <!-- ERRORES LÉXICOS -->
+                    <div class="card mb-3">
+
+                        <div class="card-header">
+                            <strong>1. Errores léxicos</strong>
+
+                            <span class="badge bg-secondary ms-2"
+                                  id="cantidadLexicos">0</span>
+                        </div>
+
+                        <div class="card-body" id="erroresLexicos">
+
+                            <p class="text-muted mb-0">
+                                Los errores léxicos aparecerán aquí.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ERRORES SINTÁCTICOS -->
+                    <div class="card">
+
+                        <div class="card-header">
+                            <strong>2. Errores sintácticos</strong>
+
+                            <span class="badge bg-secondary ms-2"
+                                  id="cantidadSintacticos">0</span>
+                        </div>
+
+                        <div class="card-body" id="erroresSintacticos">
+
+                            <p class="text-muted mb-0">
+                                Los errores sintácticos aparecerán aquí.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- TOKENS RECONOCIDOS -->
+    <div class="card shadow-sm mt-3">
+
+        <div class="card-header bg-dark text-white
+                    d-flex justify-content-between align-items-center">
+
+            <strong>Tokens reconocidos</strong>
+
+            <span class="badge bg-primary" id="cantidadTokens">
+                0
+            </span>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-sm table-hover table-striped mb-0">
+
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Lexema</th>
+                            <th>Tipo</th>
+                            <th>Línea</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaTokens">
+
+                        <tr>
+                            <td colspan="3"
+                                class="text-center text-muted py-4">
+                                Esperando análisis...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PIE DE PÁGINA -->
+    <div class="text-center text-muted mt-4 mb-2">
+
+        <small>
+            Compiladores · Universidad del Magdalena
+        </small>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================== -->
+<!-- JAVASCRIPT ORIGINAL DE TOY                 -->
+<!-- ========================================== -->
+
+<script>
+
+    // ==========================================
+    // EJEMPLO CORRECTO
+    // ==========================================
+
+    function cargarEjemploCorrecto() {
+
+        const codigo = `func main()
+
+    local nombre := "Roiman"
+
+    local edad := 25
+
+    print("Hola mundo")
+
+    println(nombre)
+
+    if edad >= 18 then
+
+        println("Mayor de edad")
+
+    else
+
+        println("Menor de edad")
+
+    end
+
+    local resultado := 10 + 5 * 2
+
+    println(resultado)
+
+end`;
+
+        cargarCodigo(codigo);
+
+    }
+
+
+    // ==========================================
+    // EJEMPLO CON ERROR SINTÁCTICO
+    // ==========================================
+
+    function cargarEjemploSintactico() {
+
+        const codigo = `func main()
+
+    local nombre := "Roiman"
+
+    local edad := 25
+
+    if edad >= then
+
+        println("Mayor de edad")
+
+    else
+
+        println("Menor de edad")
+
+    end
+
+    print(nombre)
+
+end`;
+
+        cargarCodigo(codigo);
+
+    }
+
+
+    // ==========================================
+    // EJEMPLO CON ERROR LÉXICO
+    // ==========================================
+
+    function cargarEjemploLexico() {
+
+        const codigo = `func main()
+
+    local nombre := "Roiman"
+
+    local edad := 25
+
+    print("Hola mundo")
+
+    local resultado := 10 + @ 5
+
+    println(nombre)
+
+end`;
+
+        cargarCodigo(codigo);
+
+    }
+
+
+    // ==========================================
+    // CARGAR CÓDIGO EN EL EDITOR
+    // ==========================================
+
+    function cargarCodigo(codigo) {
+
+        document.getElementById("codigo").value = codigo;
+
+        limpiarResultados();
+
+    }
+
+
+    // ==========================================
+    // LIMPIAR
+    // ==========================================
+
+    function limpiarEditor() {
+
+        document.getElementById("codigo").value = "";
+
+        limpiarResultados();
+
+    }
+
+
+    function limpiarResultados() {
+
+        document.getElementById("cantidadTokens").textContent = "0";
+
+        document.getElementById("cantidadLexicos").textContent = "0";
+
+        document.getElementById("cantidadSintacticos").textContent = "0";
+
+
+        document.getElementById("tablaTokens").innerHTML = `
+
+            <tr>
+
+                <td colspan="3" class="text-center text-muted py-4">
+
+                    Esperando análisis...
+
+                </td>
+
+            </tr>
+
+        `;
+
+
+        document.getElementById("resultadoGeneral").innerHTML = `
+
+            <div class="text-center text-muted py-3">
+
+                Los resultados aparecerán aquí.
+
+            </div>
+
+        `;
+
+
+        document.getElementById("erroresLexicos").innerHTML = `
+
+            <p class="text-muted mb-0">
+
+                Los errores léxicos aparecerán aquí.
+
+            </p>
+
+        `;
+
+
+        document.getElementById("erroresSintacticos").innerHTML = `
+
+            <p class="text-muted mb-0">
+
+                Los errores sintácticos aparecerán aquí.
+
+            </p>
+
+        `;
+
+    }
+
+
+    // ==========================================
+    // ANALIZAR CÓDIGO
+    // ==========================================
+
+    async function analizarCodigo() {
+
+        const codigo = document.getElementById("codigo").value;
+
+
+        const resultados =
+
+            document.getElementById("resultadoGeneral");
+
+
+        const boton =
+
+            document.getElementById("btnAnalizar");
+
+
+        if (codigo.trim() === "") {
+
+            resultados.innerHTML = `
+
+                <div class="alert alert-warning mb-0">
+
+                    El editor está vacío.
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        boton.disabled = true;
+
+
+        boton.innerHTML = `
+
+            <span class="spinner-border spinner-border-sm me-1"></span>
+
+            Analizando...
+
+        `;
+
+
+        resultados.innerHTML = `
+
+            <div class="alert alert-info mb-0">
+
+                Ejecutando análisis...
+
+            </div>
+
+        `;
+
+
+        try {
+
+
+            const respuesta = await fetch("/api/analizar", {
+
+
+                method: "POST",
+
+
+                headers: {
+
+                    "Content-Type": "application/json"
+
+                },
+
+
+                body: JSON.stringify({
+
+                    codigo: codigo
+
+                })
+
+
+            });
+
+
+            if (!respuesta.ok) {
+
+                throw new Error("No fue posible comunicarse con el servidor.");
+
+            }
+
+
+            const datos = await respuesta.json();
+
+
+            mostrarResultados(datos);
+
+
+        } catch (error) {
+
+
+            resultados.innerHTML = `
+
+                <div class="alert alert-danger mb-0">
+
+                    <strong>Error:</strong>
+
+                    ${escaparHTML(error.message)}
+
+                </div>
+
+            `;
+
+
+        } finally {
+
+
+            boton.disabled = false;
+
+            boton.innerHTML = "▶ Analizar código";
+
+
+        }
+
+    }
+
+
+    // ==========================================
+    // MOSTRAR RESULTADOS
+    // ==========================================
+
+    function mostrarResultados(datos) {
+
+
+        const erroresLexicos = datos.erroresLexicos || [];
+
+        const erroresSintacticos = datos.erroresSintacticos || [];
+
+        const tokens = datos.tokens || [];
+
+
+        const tokensVisibles = tokens.filter(
+
+            token => token.tipo !== "FIN_ARCHIVO"
+
+        );
+
+
+        // ======================================
+        // TABLA DE TOKENS
+        // ======================================
+
+        document.getElementById("cantidadTokens").textContent =
+
+            tokensVisibles.length;
+
+
+        let tabla = "";
+
+
+        if (tokensVisibles.length === 0) {
+
+
+            tabla = `
+
+                <tr>
+
+                    <td colspan="3" class="text-center text-muted py-4">
+
+                        No se reconocieron tokens.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+
+        } else {
+
+
+            tokensVisibles.forEach(token => {
+
+
+                tabla += `
+
+                    <tr>
+
+                        <td class="font-monospace">
+
+                            ${escaparHTML(token.lexema)}
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="badge text-bg-secondary">
+
+                                ${escaparHTML(token.tipo)}
+
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            ${token.linea}
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+            });
+
+
+        }
+
+
+        document.getElementById("tablaTokens").innerHTML = tabla;
+
+
+        // ======================================
+        // RESULTADO GENERAL
+        // ======================================
+
+        const resultadoGeneral =
+
+            document.getElementById("resultadoGeneral");
+
+
+        if (datos.aceptado) {
+
+
+            resultadoGeneral.innerHTML = `
+
+                <div class="alert alert-success mb-0">
+
+
+                    <h5 class="fw-bold mb-1">
+
+                        ✓ Código aceptado
+
+                    </h5>
+
+
+                    El análisis léxico y sintáctico finalizaron correctamente.
+
+
+                </div>
+
+            `;
+
+
+        } else {
+
+
+            resultadoGeneral.innerHTML = `
+
+                <div class="alert alert-danger mb-0">
+
+
+                    <h5 class="fw-bold mb-1">
+
+                        ✕ Código rechazado
+
+                    </h5>
+
+
+                    Se encontraron errores durante el análisis.
+
+
+                </div>
+
+            `;
+
+
+        }
+
+
+        // ======================================
+        // ERRORES LÉXICOS
+        // ======================================
+
+        document.getElementById("cantidadLexicos").textContent =
+
+            erroresLexicos.length;
+
+
+        let htmlLexicos = "";
+
+
+        if (erroresLexicos.length === 0) {
+
+
+            htmlLexicos = `
+
+                <div class="text-success">
+
+                    ✓ No se encontraron errores léxicos.
+
+                </div>
+
+            `;
+
+
+        } else {
+
+
+            erroresLexicos.forEach(error => {
+
+
+                htmlLexicos += `
+
+                    <div class="alert alert-danger py-2 mb-2">
+
+                        ${escaparHTML(error)}
+
+                    </div>
+
+                `;
+
+
+            });
+
+
+        }
+
+
+        document.getElementById("erroresLexicos").innerHTML =
+
+            htmlLexicos;
+
+
+        // ======================================
+        // ERRORES SINTÁCTICOS
+        // ======================================
+
+        document.getElementById("cantidadSintacticos").textContent =
+
+            erroresSintacticos.length;
+
+
+        let htmlSintacticos = "";
+
+
+        if (erroresLexicos.length > 0) {
+
+
+            htmlSintacticos = `
+
+                <div class="text-muted">
+
+                    El análisis sintáctico no se ejecutó porque existen
+
+                    errores léxicos. Corrige primero los tokens inválidos.
+
+                </div>
+
+            `;
+
+
+        } else if (erroresSintacticos.length === 0) {
+
+
+            htmlSintacticos = `
+
+                <div class="text-success">
+
+                    ✓ No se encontraron errores sintácticos.
+
+                </div>
+
+            `;
+
+
+        } else {
+
+
+            erroresSintacticos.forEach(error => {
+
+
+                htmlSintacticos += `
+
+                    <div class="alert alert-danger py-2 mb-2">
+
+                        ${escaparHTML(error)}
+
+                    </div>
+
+                `;
+
+
+            });
+
+
+        }
+
+
+        document.getElementById("erroresSintacticos").innerHTML =
+
+            htmlSintacticos;
+
+
+    }
+
+
+    // ==========================================
+    // PROTEGER HTML
+    // ==========================================
+
+    function escaparHTML(valor) {
+
+
+        const elemento = document.createElement("div");
+
+
+        elemento.textContent = valor ?? "";
+
+
+        return elemento.innerHTML;
+
+    }
+
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Evaluador de Expresiones Trigonométricas</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body class="bg-light">
+
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- ENCABEZADO -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                Evaluador para Expresiones Trigonométricas
+            </h3>
+
+            <p class="text-secondary small mb-0">
+                Analizador léxico y sintáctico descendente LL(1)
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a th:href="@{/}"
+               class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Volver a proyectos
+            </a>
+
+            <a th:href="@{/trigonometrico/gramatica}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-book"></i>
+                Documentación de la gramática
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- EDITOR Y RESULTADOS -->
+    <div class="row g-3">
+
+        <!-- EDITOR -->
+        <div class="col-lg-5">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white py-2">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-code-square"></i>
+                        Editor de expresiones
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <form th:action="@{/trigonometrico/analizar}"
+                          method="post">
+
+                        <label for="codigo" class="form-label fw-semibold">
+                            Escribe una expresión matemática:
+                        </label>
+
+                        <input type="text"
+                               class="form-control font-monospace"
+                               id="codigo"
+                               name="codigo"
+                               placeholder="Ejemplo: sin(30) + cos(45) * x^2"
+                               th:value="${codigo}"
+                               autocomplete="off"
+                               required>
+
+                        <div class="d-flex gap-2 mt-3">
+
+                            <button type="submit"
+                                    class="btn btn-primary flex-grow-1">
+                                <i class="bi bi-play-fill"></i>
+                                Analizar expresión
+                            </button>
+
+                            <a th:href="@{/trigonometrico/analizador}"
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-trash"></i>
+                                Limpiar
+                            </a>
+
+                        </div>
+
+                    </form>
+
+                    <hr class="my-3">
+
+                    <h6 class="fw-semibold mb-2">
+                        Elementos permitidos
+                    </h6>
+
+                    <div class="mb-2">
+                        <span class="badge text-bg-primary">sin</span>
+                        <span class="badge text-bg-primary">cos</span>
+                        <span class="badge text-bg-primary">tan</span>
+                        <span class="text-secondary small">
+                            Funciones trigonométricas
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="badge text-bg-secondary">+</span>
+                        <span class="badge text-bg-secondary">-</span>
+                        <span class="badge text-bg-secondary">*</span>
+                        <span class="badge text-bg-secondary">/</span>
+                        <span class="badge text-bg-secondary">^</span>
+                        <span class="text-secondary small">
+                            Operadores
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="badge text-bg-info">( )</span>
+                        <span class="text-secondary small">
+                            Paréntesis
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="badge text-bg-success">x</span>
+                        <span class="badge text-bg-success">y</span>
+                        <span class="badge text-bg-success">z</span>
+                        <span class="text-secondary small">
+                            Variables permitidas
+                        </span>
+                    </div>
+
+                    <div class="alert alert-light border mt-3 mb-0 small">
+                        <i class="bi bi-info-circle"></i>
+                        Las funciones trigonométricas trabajan con grados.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- RESULTADOS -->
+        <div class="col-lg-7">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white py-2">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-clipboard-check"></i>
+                        Resultados del análisis
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- ESTADO INICIAL -->
+                    <div th:if="${analizado == null}"
+                         class="text-center py-5">
+
+                        <div class="fs-1 mb-3 text-secondary">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+
+                        <h5 class="text-secondary">
+                            Esperando una expresión
+                        </h5>
+
+                        <p class="text-secondary mb-0">
+                            Escribe una expresión y presiona
+                            Analizar expresión.
+                        </p>
+
+                    </div>
+
+
+                    <!-- RESULTADOS DEL ANÁLISIS -->
+                    <div th:if="${analizado}">
+
+                        <div class="row g-2">
+
+                            <!-- ANÁLISIS LÉXICO -->
+                            <div class="col-md-6">
+
+                                <h6 class="fw-semibold mb-2">
+                                    1. Análisis léxico
+                                </h6>
+
+                                <div th:if="${errores.isEmpty()}"
+                                     class="alert alert-success py-2 mb-2">
+
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <strong>Análisis léxico exitoso.</strong>
+
+                                    <p class="mb-0 mt-1 small">
+                                        Todos los elementos fueron reconocidos.
+                                    </p>
+
+                                </div>
+
+                                <div th:unless="${errores.isEmpty()}"
+                                     class="alert alert-danger py-2 mb-2">
+
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    <strong>Errores léxicos:</strong>
+
+                                    <ul class="mb-0 mt-2 small">
+                                        <li th:each="error : ${errores}"
+                                            th:text="${error}">
+                                        </li>
+                                    </ul>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- ANÁLISIS SINTÁCTICO -->
+                            <div class="col-md-6">
+
+                                <h6 class="fw-semibold mb-2">
+                                    2. Análisis sintáctico
+                                </h6>
+
+                                <div th:if="${!errores.isEmpty()}"
+                                     class="alert alert-secondary py-2 mb-2">
+
+                                    <i class="bi bi-info-circle"></i>
+
+                                    <span class="small">
+                                        No se ejecutó porque existen errores léxicos.
+                                    </span>
+
+                                </div>
+
+                                <div th:if="${errores.isEmpty() and aceptado}"
+                                     class="alert alert-success py-2 mb-2">
+
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <strong>Análisis sintáctico exitoso.</strong>
+
+                                    <p class="mb-0 mt-1 small">
+                                        La expresión cumple con las reglas
+                                        de nuestra gramática.
+                                    </p>
+
+                                </div>
+
+                                <div th:if="${errores.isEmpty() and !aceptado}"
+                                     class="alert alert-danger py-2 mb-2">
+
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    <strong>Error sintáctico:</strong>
+
+                                    <ul class="mb-0 mt-2 small">
+                                        <li th:each="error : ${erroresSintacticos}"
+                                            th:text="${error}">
+                                        </li>
+                                    </ul>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- VALORES DE VARIABLES -->
+                        <div th:if="${solicitarValores}">
+
+                            <hr class="my-2">
+
+                            <h6 class="fw-semibold mb-1">
+                                <i class="bi bi-input-cursor-text"></i>
+                                3. Valores de las variables
+                            </h6>
+
+                            <p class="text-secondary small mb-2">
+                                Ingresa un valor numérico para cada variable.
+                            </p>
+
+                            <form th:action="@{/trigonometrico/evaluar}"
+                                  method="post">
+
+                                <input type="hidden"
+                                       name="codigo"
+                                       th:value="${codigo}">
+
+                                <div class="row g-2">
+
+                                    <div th:each="variable : ${variables}"
+                                         class="col-12 col-sm-4">
+
+                                        <label class="form-label fw-semibold mb-1"
+                                               th:for="${'variable-' + variable}"
+                                               th:text="${'Valor de ' + variable}">
+                                        </label>
+
+                                        <input type="number"
+                                               step="any"
+                                               class="form-control"
+                                               th:id="${'variable-' + variable}"
+                                               th:name="${variable}"
+                                               th:value="${valoresIngresados != null ? valoresIngresados[variable] : ''}"
+                                               placeholder="Escribe un valor"
+                                               required>
+
+                                    </div>
+
+                                </div>
+
+                                <button type="submit"
+                                        class="btn btn-success w-100 mt-2">
+
+                                    <i class="bi bi-calculator"></i>
+                                    Evaluar expresión
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+
+                        <!-- RESULTADO NUMÉRICO -->
+                        <div th:if="${evaluado}" class="mt-3">
+
+                            <hr class="my-2">
+
+                            <div class="alert alert-success mb-0 py-2">
+
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                                    <div>
+                                        <strong>
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            4. Evaluación completada
+                                        </strong>
+
+                                        <p class="mb-0 small">
+                                            Resultado numérico:
+                                        </p>
+                                    </div>
+
+                                    <h4 class="fw-bold mb-0"
+                                        th:text="${resultado}">
+                                    </h4>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ERROR DE EVALUACIÓN -->
+                        <div th:if="${errorEvaluacion != null}"
+                             class="alert alert-danger mt-3 mb-0 py-2">
+
+                            <strong>
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                Error de evaluación
+                            </strong>
+
+                            <p class="mb-0 mt-1"
+                               th:text="${errorEvaluacion}">
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- TABLA DE TOKENS -->
+    <div class="card shadow-sm mt-3"
+         th:if="${analizado}">
+
+        <div class="card-header bg-white py-2">
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-table"></i>
+                Tabla de tokens
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover mb-0">
+
+                    <thead class="table-dark">
+
+                        <tr>
+                            <th>#</th>
+                            <th>Lexema</th>
+                            <th>Tipo de token</th>
+                            <th>Línea</th>
+                            <th>Columna</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr th:each="token, estado : ${tokens}">
+
+                            <td th:text="${estado.count}"></td>
+
+                            <td class="font-monospace"
+                                th:text="${token.lexema}">
+                            </td>
+
+                            <td>
+                                <span class="badge text-bg-primary"
+                                      th:text="${token.tipo}">
+                                </span>
+                            </td>
+
+                            <td th:text="${token.linea}"></td>
+
+                            <td th:text="${token.columna}"></td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PIE DE PÁGINA -->
+    <div class="text-center text-secondary small mt-3">
+        Universidad del Magdalena · Ingeniería de Sistemas · Compiladores
+    </div>
+
+</div>
+
+</body>
+</html>
